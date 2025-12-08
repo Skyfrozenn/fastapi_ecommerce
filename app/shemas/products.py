@@ -22,6 +22,7 @@ class Product(BaseModel):
     image_url: Optional[str] = Field(None, max_length=200, description="URL изображения до 200 симоволов")
     stock: int = Field(..., gt=0, description="Количество товара, больше 0")
     category_id: PositiveInt = Field(..., description="ID категории к которой принадлежит товар")
+    seller_id : PositiveInt = Field(..., description="Айди продавца")
     is_active: bool = Field(..., description="Активность товара")
 
     model_config = ConfigDict(from_attributes=True)

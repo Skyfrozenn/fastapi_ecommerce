@@ -2,10 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.models import UserModel
-from app.shemas.users import UserCreate, UserSchema
-from app.database import AsyncSession, select, update
+from app.shemas.users import UserCreate, UserSchema, RefreshToken
+from app.database import AsyncSession, select
 from app.db_depends import get_async_db
-from app.auth import hash_password, verify_password, create_acess_token
+
+
+from app.validation import get_new_access_token, get_new_refresh_token,  get_creater_refresh_token, get_creater_acces_token,  hash_password, verify_password
+ 
+
 
  
 
@@ -50,5 +54,25 @@ async def login(form_data : OAuth2PasswordRequestForm = Depends(), db : AsyncSes
         "role" : user.role,
         "id" : user.id
     }
-    access_token = create_acess_token(data)
-    return {"access_token": access_token, "token_type": "bearer"}
+    # Используем готовые объекты из validation/__init__.py
+    access_token = get_creater_acces_token(data)
+    refresh_token = get_creater_refresh_token(data)
+    return {"access_token": access_token,"refresh_token" : refresh_token, "token_type": "bearer"}
+
+
+@router.post("/refresh-roken")
+async def update_refresh_token(new_token : RefreshToken = Depends(get_new_refresh_token)):
+    return new_token
+
+ 
+
+
+@router.post("/access-token")
+async def update_access_token(
+    new_token: RefreshToken = Depends(get_new_access_token)  # ← только одна зависимость!
+):
+    return  new_token
+
+
+
+ 

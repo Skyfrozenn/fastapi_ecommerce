@@ -6,7 +6,7 @@ from app.shemas.categories import Category, CategoryCreate
 from app.database import  select, update, AsyncSession
 from app.models import CategoryModel, UserModel
 from app.db_depends import  get_async_db
-from app.auth import get_admin_user
+from app.validation.role_depends import get_admin_user
 
 
 

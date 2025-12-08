@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException,status
 from app.shemas.products import ProductCreate, Product
 from app.models import CategoryModel, ProductModel, UserModel
 from app.database import select, update,AsyncSession
-from app.auth import  can_manage, get_seller_user
+from app.validation.role_depends import can_manage
 from app.db_depends import get_async_db
 
 

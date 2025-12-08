@@ -24,3 +24,6 @@ class UserSchema(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
      
+
+class RefreshToken(BaseModel):
+    refresh_token : str

@@ -1,22 +1,20 @@
 from fastapi import FastAPI
- 
-from app.routers import categories, products, users
-from app.routers.statistics import products_stats, category_stats
+from app.routers import categories,products, users
+from app.routers.statistics import products_stats,category_stats
+
+
+
 
 app = FastAPI(
     title="Мое приложение на FastAPI",
     version="0.1.0"
 )
 
- 
-
-# API роутеры
 app.include_router(categories.router)
 app.include_router(products.router)
 app.include_router(products_stats.router)
 app.include_router(category_stats.router)
 app.include_router(users.router)
-
 
 
 @app.get("/")
