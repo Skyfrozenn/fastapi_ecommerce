@@ -2,11 +2,11 @@ from fastapi import Depends, HTTPException, status
 
 from app.models import UserModel
 # Импортируем готовые объекты из core.py (они уже созданы)
-from app.validation.core import access_token_validate
+from app.validation.config import jwtmanager
 
 
 async def get_seller_user(
-    current_user: UserModel = Depends(access_token_validate.get_current_user)
+    current_user: UserModel = Depends(jwtmanager.get_current_user)
 ):
     """Проверка для продавца"""
     if current_user.role != "seller":
@@ -18,7 +18,7 @@ async def get_seller_user(
 
 
 async def can_manage(
-    current_user: UserModel = Depends(access_token_validate.get_current_user)
+    current_user: UserModel = Depends(jwtmanager.get_current_user)
 ):
     """Для удаления товаров - доступ продавцу и администратору"""
     if current_user.role != "seller" and current_user.role != "admin":
@@ -30,7 +30,7 @@ async def can_manage(
 
 
 async def get_admin_user(
-    current_user: UserModel = Depends(access_token_validate.get_current_user)
+    current_user: UserModel = Depends(jwtmanager.get_current_user)
 ):
     """Для CRUD категорий, просмотра статистики и эндпоинтов только для админов"""
     if current_user.role != "admin":

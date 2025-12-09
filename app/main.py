@@ -7,7 +7,7 @@ from app.routers.statistics import products_stats,category_stats
 
 app = FastAPI(
     title="Мое приложение на FastAPI",
-    version="0.1.0"
+    version="1.0"
 )
 
 app.include_router(categories.router)

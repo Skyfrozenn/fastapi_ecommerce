@@ -2,7 +2,7 @@ from fastapi import APIRouter,Depends, status, HTTPException
 
 from typing import List
 
-from app.shemas.categories import Category, CategoryCreate
+from app.schemas.categories import Category, CategoryCreate
 from app.database import  select, update, AsyncSession
 from app.models import CategoryModel, UserModel
 from app.db_depends import  get_async_db

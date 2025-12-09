@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException,status
 
-from app.shemas.products import ProductCreate, Product
+from app.schemas.products import ProductCreate, Product
 from app.models import CategoryModel, ProductModel, UserModel
 from app.database import select, update,AsyncSession
 from app.validation.role_depends import can_manage

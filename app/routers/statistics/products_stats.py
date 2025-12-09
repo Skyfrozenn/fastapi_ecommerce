@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 
 from app.database import select, func, Session,desc, AsyncSession,joinedload
 from app.models import ProductModel, CategoryModel
-from app.shemas.products import  ProductCount, ProductPopularity
+from app.schemas.products import  ProductCount, ProductPopularity
 from app.db_depends import get_db, get_async_db
 
 
