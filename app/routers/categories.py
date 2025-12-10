@@ -1,9 +1,13 @@
 from fastapi import APIRouter,Depends, status, HTTPException
 
+
+from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from typing import List
 
 from app.schemas.categories import Category, CategoryCreate
-from app.database import  select, update, AsyncSession
+ 
 from app.models import CategoryModel, UserModel
 from app.db_depends import  get_async_db
 from app.validation.role_depends import get_admin_user

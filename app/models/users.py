@@ -13,3 +13,4 @@ class UserModel(Base):
     role : Mapped[str] = mapped_column(String, default = "admin")
 
     products : Mapped[list["ProductModel"]] = relationship(back_populates="seller")
+    reviews : Mapped[list["ReviewModel"]] = relationship(back_populates="user")

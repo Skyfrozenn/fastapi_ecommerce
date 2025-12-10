@@ -15,15 +15,16 @@ class ProductCreate(BaseModel):
     
 
 class Product(BaseModel):
-    id: PositiveInt = Field(..., description="Уникальный идентификатор товара")
-    name: str = Field(..., min_length=3, max_length=40, description="Введите название товара (3-20 символов)")
-    description: Optional[str] = Field(None, max_length=500, description="Введите описание до 500 символов")
-    price: Decimal = Field(..., gt=0, description="Введите цену больше 0",examples=[99.99])
-    image_url: Optional[str] = Field(None, max_length=200, description="URL изображения до 200 симоволов")
-    stock: int = Field(..., gt=0, description="Количество товара, больше 0")
-    category_id: PositiveInt = Field(..., description="ID категории к которой принадлежит товар")
-    seller_id : PositiveInt = Field(..., description="Айди продавца")
-    is_active: bool = Field(..., description="Активность товара")
+    id: PositiveInt  
+    name: str  
+    description: Optional[str]  
+    price: Decimal 
+    image_url: Optional[str]  
+    stock: int  
+    category_id: PositiveInt  
+    seller_id : PositiveInt  
+    rating : float  
+    is_active: bool 
 
     model_config = ConfigDict(from_attributes=True)
     

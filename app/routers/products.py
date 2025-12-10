@@ -1,8 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException,status
 
+from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.schemas.products import ProductCreate, Product
 from app.models import CategoryModel, ProductModel, UserModel
-from app.database import select, update,AsyncSession
+ 
 from app.validation.role_depends import can_manage
 from app.db_depends import get_async_db
 
@@ -13,6 +16,9 @@ router = APIRouter(
     prefix = "/products",
     tags = ["products"]
 )
+
+
+ 
 
 
 @router.get("/", response_model = list[Product])

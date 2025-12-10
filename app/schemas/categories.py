@@ -9,10 +9,10 @@ class CategoryCreate(BaseModel):
 
 
 class Category(BaseModel):
-    id : PositiveInt =  Field(..., description="ID уникальный идентификатор категории")
-    name : str = Field(..., min_length=3, max_length=50, description="Введите название категории от 3 до 50 символов")
-    parent_id : Optional[int] =  Field(default=None, description="ID родительской категории если есть")
-    is_active : bool =  Field(..., description="Активность категории")
+    id : PositiveInt  
+    name : str  
+    parent_id : Optional[int] 
+    is_active : bool  
 
     model_config = ConfigDict(from_attributes = True)
 
