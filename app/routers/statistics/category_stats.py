@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends
 
 from app.database import select, Session, desc, func, AsyncSession
-from app.models import CategoryModel, ProductModel
+from app.models import CategoryModel, ProductModel, UserModel
 from app.schemas.categories import CategoryStats, CategoryPopularity, CategoryCount
 from app.db_depends import get_db, get_async_db
+from app.validation.role_depends import get_admin_user
 
 router = APIRouter(
     prefix="/statistics/categories",
@@ -11,20 +12,20 @@ router = APIRouter(
 )
 
 @router.get("/active", response_model = CategoryCount)
-async def get_count_active_categories(db : AsyncSession = Depends(get_async_db)) -> str:
+async def get_count_active_categories(db : AsyncSession = Depends(get_async_db), current_user : UserModel = Depends(get_admin_user) ) -> str:
     result = await db.scalars(select(func.count(CategoryModel.id)).where(CategoryModel.is_active == True))
     count = result.first()
     return  {"category_count" : count}
 
 
 @router.get("/inactive", response_model=CategoryCount)
-async def get_count_inactive_categories(db : AsyncSession = Depends(get_async_db)) -> str:
+async def get_count_inactive_categories(db : AsyncSession = Depends(get_async_db),  current_user : UserModel = Depends(get_admin_user)) -> str:
     result = await db.scalars(select(func.count(CategoryModel.id)).where(CategoryModel.is_active == False))
     count = result.first()
     return  {"category_count" : count}
 
 @router.get("/total", response_model=CategoryCount)
-async def get_total_count_categories(db : AsyncSession = Depends(get_async_db)):
+async def get_total_count_categories(db : AsyncSession = Depends(get_async_db),  current_user : UserModel = Depends(get_admin_user)):
     result =  await db.scalars(select(func.count(CategoryModel.id)))
     count = result.first()
     return  {"category_count" : count}
@@ -32,7 +33,7 @@ async def get_total_count_categories(db : AsyncSession = Depends(get_async_db)):
 
 
 @router.get("/most-expensive", response_model=CategoryStats) #самая дорогая
-async def get_most_expensive_category(db : AsyncSession = Depends(get_async_db)):
+async def get_most_expensive_category(db : AsyncSession = Depends(get_async_db), current_user : UserModel = Depends(get_admin_user)):
     request_category = await db.execute(
         select(
             CategoryModel,
@@ -62,7 +63,7 @@ async def get_most_expensive_category(db : AsyncSession = Depends(get_async_db))
 
 
 @router.get("/most-cheapest",response_model=CategoryStats) #самая дешевая
-async def get_category_with_cheapest_product(db: AsyncSession = Depends(get_async_db)):
+async def get_category_with_cheapest_product(db: AsyncSession = Depends(get_async_db), current_user : UserModel = Depends(get_admin_user)):
     request_category = await  db.execute(
         select(
             CategoryModel,
@@ -96,7 +97,7 @@ async def get_category_with_cheapest_product(db: AsyncSession = Depends(get_asyn
 
 
 @router.get("/max-products", response_model=CategoryPopularity)
-async def get_products_leader_category(db : AsyncSession = Depends(get_async_db)):
+async def get_products_leader_category(db : AsyncSession = Depends(get_async_db), current_user : UserModel = Depends(get_admin_user)):
     request_category = await  db.execute(
         select(
             CategoryModel,
@@ -121,7 +122,7 @@ async def get_products_leader_category(db : AsyncSession = Depends(get_async_db)
 
 
 @router.get("/min-products", response_model=CategoryPopularity)
-async def get_products_min_category(db : AsyncSession = Depends(get_async_db)):
+async def get_products_min_category(db : AsyncSession = Depends(get_async_db), current_user : UserModel = Depends(get_admin_user)):
     request_category = await db.execute(
         select(
             CategoryModel,

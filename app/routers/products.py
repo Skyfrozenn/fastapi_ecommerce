@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException,status
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from app.schemas.products import ProductCreate, Product
-from app.models import CategoryModel, ProductModel, UserModel
+from app.schemas.products import ProductCreate, Product, ProductDetail
+from app.models import CategoryModel, ProductModel, UserModel, ReviewModel
  
 from app.validation.role_depends import can_manage
 from app.db_depends import get_async_db
@@ -23,15 +24,18 @@ router = APIRouter(
 
 @router.get("/", response_model = list[Product])
 async def get_active_products(db : AsyncSession = Depends(get_async_db)) -> list[Product]:
-    request_products = await db.scalars(
+    products = await db.scalars(
         select(ProductModel)
         .join(ProductModel.category)
         .where(ProductModel.is_active == True)
         .where(CategoryModel.is_active == True)
+        .options(
+            selectinload(ProductModel.reviews.and_(ReviewModel.is_active == True))
+        )
         .order_by(ProductModel.id.asc())
     )
-    active_products = request_products.all()
-    return active_products
+    return products.all()
+     
  
     
 @router.post("/", response_model = Product, status_code=status.HTTP_201_CREATED)
@@ -50,7 +54,7 @@ async def new_product(new_product : ProductCreate, db : AsyncSession = Depends(g
     return product
 
 
-@router.get("/products/{category_id}", response_model = list[Product])
+@router.get("/products/{category_id}", response_model = list[ProductDetail])
 async def active_products_category(category_id : int, db : AsyncSession = Depends(get_async_db)):
     request_category = await db.scalars(select(CategoryModel).where(CategoryModel.id == category_id, CategoryModel.is_active == True))
     category = request_category.first()

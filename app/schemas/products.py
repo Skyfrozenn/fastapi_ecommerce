@@ -2,6 +2,8 @@ from pydantic import BaseModel, PositiveInt, Field, ConfigDict
 from typing import Optional
 from decimal import Decimal
 
+from app.schemas.reviews import Review
+
 
 class ProductCreate(BaseModel):
     name: str = Field(..., min_length=3, max_length=100, description="Введите название товара (3-20 символов)")
@@ -18,17 +20,19 @@ class Product(BaseModel):
     id: PositiveInt  
     name: str  
     description: Optional[str]  
-    price: Decimal 
+    price: Decimal = Field(..., examples=["99.99"])
     image_url: Optional[str]  
     stock: int  
     category_id: PositiveInt  
     seller_id : PositiveInt  
     rating : float  
-    is_active: bool 
+    is_active: bool
+     
 
     model_config = ConfigDict(from_attributes=True)
     
-
+class ProductDetail(Product):  # Наследуем и добавляем отзывы
+    reviews: list[Review]
 
 class ProductCount(BaseModel):
     count_product : int = Field(..., description = "Количество товара")
