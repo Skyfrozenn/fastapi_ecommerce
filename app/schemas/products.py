@@ -8,7 +8,7 @@ from app.schemas.reviews import Review
 class ProductCreate(BaseModel):
     name: str = Field(..., min_length=3, max_length=100, description="Введите название товара (3-20 символов)")
     description: Optional[str] = Field(None, max_length=500, description="Введите описание до 500 символов")
-    price: Decimal = Field(..., gt=0, description="Введите цену больше 0", examples=[99.99])
+    price: Decimal = Field(..., ge=0, description="Введите цену больше 0", examples=[99.99])
     image_url: Optional[str] = Field(None, max_length=200, description="URL изображения до 200 симоволов")
     stock: int = Field(..., gt=0, description="Количество товара, больше 0")
     category_id: PositiveInt = Field(..., description="ID категории к которой принадлежит товар")
@@ -30,15 +30,32 @@ class Product(BaseModel):
      
 
     model_config = ConfigDict(from_attributes=True)
-    
+
+ 
+
+
+
 class ProductDetail(Product):  # Наследуем и добавляем отзывы
     reviews: list[Review]
 
+
+
 class ProductCount(BaseModel):
     count_product : int = Field(..., description = "Количество товара")
+
+
 
 class ProductPopularity(BaseModel):
     product : Product
     category_name : str = Field(..., description = "Категория товара")
 
     model_config = ConfigDict(from_attributes = True)
+
+
+class ProductList(BaseModel):
+    items : list[ProductDetail] = Field(description="Товары для текущей страницы")
+    total : int = Field(ge=0, description="Общее количество товаров")
+    page : int = Field(ge=1, description="Номер страницы")
+    page_size : int = Field(ge=1, description="Общее количество товаров")
+
+    model_config = ConfigDict(from_attributes=True)
