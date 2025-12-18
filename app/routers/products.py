@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException,status, Query
 
-from sqlalchemy import select, update, func
+from sqlalchemy import select, update, func, desc, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -29,7 +29,8 @@ router = APIRouter(
 @router.get("/", response_model = ProductList)
 async def get_active_products(
     page : int = Query(1, ge=1),
-    page_size : int = Query(5, ge=1),
+    page_size : int = Query(5),
+    search : str | None = Query(None, min_length=1, description="Поиск товаров по названию"),
     category_id : int | None = Query(None, description="Категория для товаров"),
     min_price : float | None = Query(None, ge=0, description="Минимальная цена" ),
     max_price : float | None = Query(None, ge=0, description="Максимальная цена"),
@@ -38,36 +39,76 @@ async def get_active_products(
     db : AsyncSession = Depends(get_async_db)
 ) -> ProductList:
     
-    product_total_request = await db.execute(select(func.count(ProductModel.id)).where(ProductModel.is_active == True))
-    total = product_total_request.scalar()
+    
 
     filters = [ProductModel.is_active == True]
     if category_id is not None:
         filters.append(ProductModel.category_id == category_id)
     if min_price is not None:
-        filters.append(ProductModel.price >= max_price)
+        filters.append(ProductModel.price >= min_price)
     if max_price is not None:
         filters.append(ProductModel.price <= max_price)
     if seller_id is not None:
         filters.append(ProductModel.seller_id == seller_id)
     if is_active is not None:
         filters.append(ProductModel.is_active == is_active)
+ 
+
+    rank_col = None
+    if search is not None:
+        search_value = search.strip()
+        if search_value:
+            ts_query_en = func.websearch_to_tsquery('english', search_value)
+            ts_query_ru = func.websearch_to_tsquery('russian', search_value)  
+            filters.append(or_(
+                ProductModel.tsv.op("@@")(ts_query_en),
+                ProductModel.tsv.op("@@")(ts_query_ru)
+            ))
+
+            rank_col = func.greatest(
+                func.ts_rank_cd(ProductModel.tsv, ts_query_en),
+                func.ts_rank_cd(ProductModel.tsv, ts_query_ru)
+            )  
+            
+
+    #каунт после всех проверок
+    product_total_request = await db.execute(select(func.count(ProductModel.id)).where(*filters))
+    total = product_total_request.scalar()
+     
+    if rank_col is not None:
+        products_request = await db.scalars(
+            select(ProductModel)
+            .join(ProductModel.category)
+            .where(*filters)
+            .where( CategoryModel.is_active == True)
+            .offset((page - 1) * page_size)
+            .options(
+                selectinload(ProductModel.reviews.and_(ReviewModel.is_active == True))
+            )
+            .order_by(desc(rank_col), ProductModel.id)
+            .limit(page_size)            
+        )
+        result = products_request.all()
+        items = [row for row in result]
+       
+    else:
+        products_request = await db.scalars(
+            select(ProductModel)
+            .join(ProductModel.category)
+            .where(*filters)
+            .where(CategoryModel.is_active == True)
+            .offset((page - 1) * page_size)
+            .options(
+                selectinload(ProductModel.reviews.and_(ReviewModel.is_active == True))
+            )
+            .order_by(ProductModel.id)
+            .limit(page_size)            
+        )
+        items = products_request.all()
 
     
-    products = await db.scalars(
-        select(ProductModel)
-        .join(ProductModel.category)
-        .where(*filters)
-        .where(CategoryModel.is_active == True)
-        .offset((page - 1) * page_size)
-        .options(
-            selectinload(ProductModel.reviews.and_(ReviewModel.is_active == True))
-        )
-        .order_by(ProductModel.id.asc())
-        .limit(page_size)
-    )
     return {
-        "items" : products.all(),
+        "items" : items,
         "total" : total,
         "page" : page,
         "page_size" : page_size

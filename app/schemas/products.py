@@ -56,6 +56,6 @@ class ProductList(BaseModel):
     items : list[ProductDetail] = Field(description="Товары для текущей страницы")
     total : int = Field(ge=0, description="Общее количество товаров")
     page : int = Field(ge=1, description="Номер страницы")
-    page_size : int = Field(ge=1, description="Общее количество товаров")
+    page_size : int = Field(description="Общее количество товаров")
 
     model_config = ConfigDict(from_attributes=True)
