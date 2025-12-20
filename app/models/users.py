@@ -15,3 +15,4 @@ class UserModel(Base):
     products : Mapped[list["ProductModel"]] = relationship(back_populates="seller",cascade="all, delete-orphan")
     reviews : Mapped[list["ReviewModel"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     cart_item : Mapped[list["CartModel"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    orders : Mapped[list["OrderModel"]] = relationship(back_populates="user", cascade="all, delete-orphan" )

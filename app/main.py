@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import categories,products, users, reviews, cart
+from app.routers import categories,products, users, reviews, cart, orders
 from app.routers.statistics import products_stats,category_stats
 
 
@@ -18,6 +18,7 @@ app.include_router(category_stats.router)
 app.include_router(users.router)
 app.include_router(reviews.router)
 app.include_router(cart.router)
+app.include_router(orders.router)
 
 
 @app.get("/")

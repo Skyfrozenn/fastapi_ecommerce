@@ -1,10 +1,10 @@
 from fastapi import HTTPException, status
 
 from sqlalchemy import select, func
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import ReviewModel, ProductModel, CartModel
+from app.models import ReviewModel, ProductModel, CartModel, OrderModel, OrderItemModel
 
  
 
@@ -40,4 +40,16 @@ async def _get_cart_item(db : AsyncSession, user_id : int, product_id : int):
         .options(joinedload(CartModel.product))
     )
     cart = request_cart.first()
-    return cart  
+    return cart 
+
+
+async def _get_order_item(db : AsyncSession, order_id : int):
+    request_order = await db.scalars(
+        select(OrderModel)
+        .where(OrderModel.id == order_id)
+        .options(
+            selectinload(OrderModel.items).selectinload(OrderItemModel.product)
+        )
+    )
+    result = request_order.first()
+    return result
