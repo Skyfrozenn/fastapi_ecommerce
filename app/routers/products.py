@@ -1,15 +1,26 @@
-from fastapi import APIRouter, Depends, HTTPException,status, Query
+from fastapi import APIRouter, Depends, HTTPException,status, Query, UploadFile, File, Form
 
 from sqlalchemy import select, update, func, desc, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from pathlib import Path
+import uuid
+
+
 from app.schemas.products import ProductCreate, Product, ProductDetail, ProductList
 from app.models import CategoryModel, ProductModel, UserModel, ReviewModel
- 
+
 from app.validation.role_depends import can_manage
 from app.db_depends import get_async_db
 
+
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent 
+MEDIA_ROOT = BASE_DIR / "media" / "products" 
+MEDIA_ROOT.mkdir(parents=True, exist_ok=True) 
+ALLOWED_IMAGES_TYPES = ["image/jpeg", "image/png", "image/gif"]
+MAX_IMAGE_SIZE = 2 * 1024 * 1024 #2мб
 
 
 
@@ -19,11 +30,40 @@ router = APIRouter(
 )
 
 
-    #items : list[ProductDetail] = Field(description="Товары для текущей страницы")
-    #total : int = Field(ge=0, description="Общее количество товаров")
-    #page : int = Field(ge=1, description="Номер страницы")
-    #page_size
- 
+async def save_image(file : UploadFile) -> str:
+    """Сохраняет загруженный файл в папку media/products"""
+    if file.content_type not in ALLOWED_IMAGES_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Недопустимый тип файла"
+        )
+    content = await file.read()
+    if len(content) > MAX_IMAGE_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Размер файла превышает допустимый размер"
+        )
+    extension = Path(file.filename or "").suffix.lower() or ".jpg"
+    filename = f"{uuid.uuid4()}{extension}"
+    file_path = MEDIA_ROOT / filename
+    file_path.write_bytes(content)
+    return f"/media/products/{filename}"
+
+    
+def remove_product_image(url : str):
+    """Удаляет файл из папки media/products"""
+    if not url:
+        return
+    relative_path = url.lstrip("/")
+    file_path = BASE_DIR / relative_path
+    if file_path.exists():
+        file_path.unlink()
+        
+
+
+
+
+
 
 
 @router.get("/", response_model = ProductList)
@@ -118,15 +158,24 @@ async def get_active_products(
  
     
 @router.post("/", response_model = Product, status_code=status.HTTP_201_CREATED)
-async def new_product(new_product : ProductCreate, db : AsyncSession = Depends(get_async_db), current_user : UserModel = Depends(can_manage) ) -> Product:
+async def new_product(
+    new_product : ProductCreate = Depends(ProductCreate.as_form),
+    image : UploadFile | None = File(None),
+    db : AsyncSession = Depends(get_async_db),
+    current_user : UserModel = Depends(can_manage)
+) -> Product:
     request_category = await db.scalars(select(CategoryModel).where(CategoryModel.id == new_product.category_id, CategoryModel.is_active == True))
     category = request_category.first()
     if category is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail = "Указанная категория товара не найдена")
     
-    product_data = new_product.model_dump()
-    product_data["seller_id"] = current_user.id
-    product = ProductModel(**product_data)
+    if image is not None:
+        image_url = await save_image(image)
+    product = ProductModel(
+        **new_product.model_dump(),
+        seller_id = current_user.id,
+        image_url = image_url
+    )
     db.add(product)
     await db.commit()
     await db.refresh(product)
@@ -151,7 +200,13 @@ async def get_product(product_id : int, db : AsyncSession = Depends(get_async_db
 
 
 @router.put("/{product_id}", response_model = Product)
-async def update_product(product_id : int, new_product : ProductCreate, db : AsyncSession = Depends(get_async_db), current_user : UserModel = Depends(can_manage)) -> Product:
+async def update_product(
+    product_id : int,
+    new_product : ProductCreate = Depends(ProductCreate.as_form),
+    image : UploadFile | None = File(None),
+    db : AsyncSession = Depends(get_async_db),
+    current_user : UserModel = Depends(can_manage)
+) -> Product:
     request_product = await db.scalars(select(ProductModel).where(ProductModel.id == product_id, ProductModel.is_active == True))
     product = request_product.first()
     if product is None:
@@ -162,6 +217,10 @@ async def update_product(product_id : int, new_product : ProductCreate, db : Asy
     category = request_category.first()
     if category is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail = "Указаная категория не найдена или не активна")
+    if image:
+        remove_product_image(product.image_url)
+        product.image_url = await save_image(image)
+
     await db.execute(update(ProductModel).where(ProductModel.id == product_id).values(**new_product.model_dump()))
     await db.commit()
     await db.refresh(product)
@@ -177,6 +236,9 @@ async def deactivation_status_product(product_id : int, db : AsyncSession = Depe
     if current_user.role == "seller":
         if product.seller_id != current_user.id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Только админ или владец товара может его удалить!")
+        
+    remove_product_image(product.image_url)
+
     await db.execute(update(ProductModel).where(ProductModel.id == product_id).values(is_active = False))
     await db.commit()
     await db.refresh(product)

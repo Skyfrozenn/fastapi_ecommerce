@@ -120,9 +120,7 @@ class JWTManager:
         }
         return self.create_refresh_token(data)
 
-    
-    
-
+ 
     
      
     
