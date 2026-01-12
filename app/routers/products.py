@@ -222,12 +222,6 @@ async def update_product(
         product.image_url = await save_image(image)
 
     await db.execute(update(ProductModel).where(ProductModel.id == product_id).values(**new_product.model_dump()))
-    await db.commit()
-    await db.refresh(product)
-    return product
-
-
-@router.delete("/{product_id}", response_model = Product)
 async def deactivation_status_product(product_id : int, db : AsyncSession = Depends(get_async_db), current_user : UserModel = Depends(can_manage)) -> Product:
     request_product = await db.scalars(select(ProductModel).where(ProductModel.id == product_id, ProductModel.is_active == True))
     product = request_product.first()
@@ -243,3 +237,6 @@ async def deactivation_status_product(product_id : int, db : AsyncSession = Depe
     await db.commit()
     await db.refresh(product)
     return product
+
+
+ 

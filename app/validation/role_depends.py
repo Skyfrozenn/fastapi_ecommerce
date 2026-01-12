@@ -2,7 +2,7 @@ from fastapi import Depends, HTTPException, status
 
 from app.models import UserModel
 # Импортируем готовые объекты из core.py (они уже созданы)
-from app.validation.config import jwtmanager
+from app.config import jwtmanager
 
 
 async def get_seller_user(

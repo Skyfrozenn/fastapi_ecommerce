@@ -4,11 +4,12 @@ from sqlalchemy import select, update, func, delete
 from sqlalchemy.orm import selectinload, joinedload, contains_eager
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.schemas.order import OrderSchema, OrderItemSchema, OrderListSchema
+from app.schemas.order import OrderSchema, OrderItemSchema, OrderListSchema, OrderCheckoutResponse
 from app.models import OrderItemModel, OrderModel, ProductModel,CartModel, UserModel
-from app.validation.config import jwtmanager
+from app.config import jwtmanager
 from app.utilits import _get_order_item
 from app.db_depends import get_async_db
+from app.payments import create_yookassa_payment
 
 from decimal import Decimal
 
@@ -27,7 +28,7 @@ async def new_order(db : AsyncSession = Depends(get_async_db), current_user : Us
         .where(CartModel.user_id == current_user.id)
         .where(ProductModel.is_active == True)
         .where(ProductModel.price.isnot(None))
-        .options(contains_eager(CartModel.product))         
+        .options(selectinload(CartModel.product))         
     )
     carts = request_cart.all()
     if carts is None:
@@ -54,9 +55,33 @@ async def new_order(db : AsyncSession = Depends(get_async_db), current_user : Us
 
     order.total_amount = total_amount
     db.add(order)
+
+    try:
+        await db.flush()
+        payment_info = await create_yookassa_payment(
+            order_id=order.id,
+            amount=order.total_amount,
+            user_email=current_user.email,
+            description=f"Оплата заказа #{order.id}",
+        )
+    except RuntimeError as exc:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(exc),
+        ) from exc
+    except Exception as exc:
+        print(exc)
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Не удалось инициировать оплату",
+        ) from exc
+
+    order.payment_id = payment_info.get("id")
+
     await db.execute(delete(CartModel).where(CartModel.user_id == current_user.id))
     await db.commit()
-    await db.refresh(order)
 
     created_order = await _get_order_item(db, order.id)
     if not created_order:
@@ -64,7 +89,16 @@ async def new_order(db : AsyncSession = Depends(get_async_db), current_user : Us
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to load created order",
         )
-    return created_order
+    return OrderCheckoutResponse(
+        order=created_order,
+        confirmation_url=payment_info.get("confirmation_url"),
+    )
+
+ 
+
+
+
+
 
 @router.get("/", response_model=OrderListSchema)
 async def get_all_orders(

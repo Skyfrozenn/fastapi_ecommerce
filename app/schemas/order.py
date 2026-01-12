@@ -36,3 +36,12 @@ class OrderListSchema(BaseModel):
     page_size: int = Field(ge=1, description="Размер страницы")
 
     model_config = ConfigDict(from_attributes=True)
+
+
+
+class OrderCheckoutResponse(BaseModel):
+    order: OrderSchema = Field(..., description="Созданный заказ")
+    confirmation_url: str | None = Field(
+        None,
+        description="URL для перехода на оплату в YooKassa",
+    )

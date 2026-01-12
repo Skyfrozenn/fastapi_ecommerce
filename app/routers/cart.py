@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.cart import CartItemCreate, CartItemResponce, CartItemUpdate, CartUser
 from app.models import ProductModel, CartModel, UserModel
 from app.db_depends import get_async_db
-from app.validation.config import jwtmanager
+from app.config import jwtmanager
 from app.utilits import _ensure_product_available, _get_cart_item
 
 from decimal import Decimal

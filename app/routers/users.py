@@ -76,6 +76,3 @@ async def update_access_token(
 ):
     return await jwtmanager.new_access_token(user)
 
-
-
- 
