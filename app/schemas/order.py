@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from app.schemas.products import Product
 from datetime import datetime
+from typing import Optional
 
 
 class OrderItemSchema(BaseModel):
@@ -24,6 +25,8 @@ class OrderSchema(BaseModel):
     total_amount : Decimal = Field(...,ge=0, description="Общая стоимость товара")
     createt_at: datetime = Field(..., description="Когда заказ был создан")
     updated_at: datetime = Field(..., description="Когда последний раз обновлялся")
+    payment_id : Optional[str] = Field(None, max_length=64, description="Айди платежа с юкасса")
+    paid_at : Optional[datetime] = Field(None, description="Дата создания платежа в Юкасса")
     items: list[OrderItemSchema] = Field(default_factory=list, description="Список позиций")
 
     model_config = ConfigDict(from_attributes=True)
