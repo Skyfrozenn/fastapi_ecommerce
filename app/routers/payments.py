@@ -98,8 +98,8 @@ async def yookassa_webhook(
         return {"status": "ok"}
     elif payment.status == "canceled":
         order.status = "canceled"
+        await db.commit()
+        return {"status": "ok"}
 
 
-    #проверка статуса добавление паймент айди и паймент at когда был сделан заказ для обратной связи с юкасса если че 
-    await db.commit()
-    return {"status": "ok"}
+    
