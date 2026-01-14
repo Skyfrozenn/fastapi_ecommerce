@@ -20,7 +20,7 @@ router = APIRouter(
 )
 
 
-@router.post("/", response_model=OrderSchema, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=OrderCheckoutResponse, status_code=status.HTTP_201_CREATED)
 async def new_order(db : AsyncSession = Depends(get_async_db), current_user : UserModel = Depends(jwtmanager.get_current_user)) -> OrderSchema:
     request_cart = await db.scalars(
         select(CartModel)
@@ -139,3 +139,19 @@ async def get_order(
     return order
          
     
+
+@router.get("/{order_id}/status", response_model=OrderSchema) 
+async def get_order_status(
+    order_id : int,
+    db : AsyncSession = Depends(get_async_db),
+    current_user : UserModel = Depends(jwtmanager.get_current_user)
+) -> OrderSchema:
+    order = await _get_order_item(db, order_id)
+    if order is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Заказа не существует")
+    if order.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Нет доступа к заказу")
+    return order
+    
+     
+ 

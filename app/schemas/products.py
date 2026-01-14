@@ -41,7 +41,7 @@ class Product(BaseModel):
     name: str  
     description: Optional[str]  
     price: Decimal = Field(..., examples=["99.99"])
-    image_url: Optional[str]  
+    image_url: str | None 
     stock: int  
     category_id: PositiveInt  
     seller_id : PositiveInt  

@@ -168,14 +168,15 @@ async def new_product(
     category = request_category.first()
     if category is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail = "Указанная категория товара не найдена")
-    
-    if image is not None:
-        image_url = await save_image(image)
+     
     product = ProductModel(
         **new_product.model_dump(),
         seller_id = current_user.id,
-        image_url = image_url
+        
     )
+    if image is not None:
+        image_url = await save_image(image)
+        product.image_url = image_url
     db.add(product)
     await db.commit()
     await db.refresh(product)
@@ -227,9 +228,9 @@ async def deactivation_status_product(product_id : int, db : AsyncSession = Depe
     product = request_product.first()
     if product is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail = "Товар не найден")
-    if current_user.role == "seller":
-        if product.seller_id != current_user.id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Только админ или владец товара может его удалить!")
+    
+    if product.seller_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Только админ или владец товара может его удалить!")
         
     remove_product_image(product.image_url)
 
