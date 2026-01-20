@@ -10,3 +10,4 @@ PyJWT
 python-multipart
 python-dotenv
 yookassa
+loguru
