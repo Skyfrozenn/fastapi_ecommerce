@@ -2,9 +2,9 @@ from pydantic import BaseModel, Field, EmailStr, ConfigDict, field_validator
 
 
 class UserCreate(BaseModel):
+    username : str = Field(..., min_length = 3, max_length = 20, description = "Имя пользователя от 3 до 20 символов")  
     email : EmailStr
     password : str = Field(..., min_length = 8, description = "Пароль не менее 8 символов")
-    role : str = Field(default="admin", pattern="^(user|admin)$", description="Роль: 'user' или 'admin'")
 
     @field_validator("password")
     @classmethod

@@ -28,9 +28,9 @@ async def new_user(user_create : UserCreate, db : AsyncSession = Depends(get_asy
     if user is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email занят!")
     new_user = UserModel(
+        username = user_create.username,
         email = user_create.email,
-        hashed_password = hash_password(user_create.password),
-        role = user_create.role
+        hashed_password = hash_password(user_create.password), 
     )
     db.add(new_user)
     await db.commit()

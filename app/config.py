@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 from app.validation.jwt_manager import JWTManager
 
 
+
+
 load_dotenv()
 
 SECRET_KEY = os.getenv("SECRET_KEY")

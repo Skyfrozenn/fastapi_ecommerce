@@ -1,0 +1,30 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    command: uvicorn app.main:app --host 0.0.0.0 --reload
+    ports:
+      - 8000:8000
+    volumes:
+      - ./:/home/fast
+    depends_on:
+      - db
+    env_file:
+      - .env  # DATABASE_URL + YOOKASSA_* для FastAPI
+
+  db:
+    image: postgres:17
+    env_file:
+      - .env  # POSTGRES_* переменные для PostgreSQL
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    ports:
+      - "5433:5432"  # для локального доступа
+
+   
+
+
+volumes:
+  postgres_data:
+   

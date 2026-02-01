@@ -7,10 +7,11 @@ from app.database import Base
 class UserModel(Base):
     __tablename__ = "users"
     id : Mapped[int] = mapped_column(Integer, primary_key=True)
+    username : Mapped[str] = mapped_column(String(20), nullable=False, unique=True)
     email : Mapped[str] = mapped_column(String, unique=True, nullable=False)
     hashed_password : Mapped[str] = mapped_column(String, nullable = False)
     is_active : Mapped[bool] = mapped_column(Boolean, default = True)
-    role : Mapped[str] = mapped_column(String, default = "admin")
+    role : Mapped[str] = mapped_column(String, default = "user", nullable=True)
 
     products : Mapped[list["ProductModel"]] = relationship(back_populates="seller",cascade="all, delete-orphan")
     reviews : Mapped[list["ReviewModel"]] = relationship(back_populates="user", cascade="all, delete-orphan")

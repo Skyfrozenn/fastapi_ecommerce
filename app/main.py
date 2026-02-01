@@ -7,7 +7,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
 
-from app.routers import categories,products, users, reviews, cart, orders, payments, products_v2
+from app.routers import categories,products, users, reviews, cart, orders, payments
 from app.routers.statistics import products_stats,category_stats
 
 from time import time
@@ -30,7 +30,7 @@ async def log_middleware(request: Request, call_next):
     log_id = str(uuid4())
     with logger.contextualize(log_id=log_id):
         try:
-            response = await call_next(request)
+            response = await call_next(request) #передаем дальше поток, чтобы получить request данные
             if response.status_code in [401, 402, 403, 404]:
                 logger.warning(f"Request to {request.url.path} failed")
             else:
