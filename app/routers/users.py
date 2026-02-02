@@ -6,11 +6,16 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import UserModel
-from app.schemas.users import UserCreate, UserSchema 
+from app.schemas.users import UserCreate, UserSchema
 from app.db_depends import get_async_db
 
 
-from app.validation import jwtmanager, hash_password, verify_password
+from app.validation import  hash_password, verify_password
+from app.validation.role_depends import get_admin_user
+from app.config import jwtmanager
+
+from app.utilits import get_blecklisted_tokens
+
  
 
 
@@ -28,7 +33,7 @@ async def new_user(user_create : UserCreate, db : AsyncSession = Depends(get_asy
     if user is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email занят!")
     new_user = UserModel(
-        username = user_create.username,
+        name = user_create.name,
         email = user_create.email,
         hashed_password = hash_password(user_create.password), 
     )
@@ -76,3 +81,13 @@ async def update_access_token(
 ):
     return await jwtmanager.new_access_token(user)
 
+
+@router.post("/revoke-tokens")
+async def logout(token_revoke : dict = Depends(jwtmanager.revoke_refresh_tokens)):
+    return token_revoke
+
+
+
+@router.get("/blaclist-tokens")
+async def  list_blacklisted_tokens( list_tokens : list[str] = Depends(get_blecklisted_tokens)):
+    return list_tokens

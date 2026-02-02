@@ -10,21 +10,27 @@ services:
       - ./:/home/fast
     depends_on:
       - db
+      - redis
     env_file:
-      - .env  # DATABASE_URL + YOOKASSA_* для FastAPI
+      - .env  # DATABASE_URL + YOOKASSA_* for FastAPI
 
   db:
     image: postgres:17
     env_file:
-      - .env  # POSTGRES_* переменные для PostgreSQL
+      - .env  # POSTGRES_* variables for PostgreSQL
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     ports:
-      - "5433:5432"  # для локального доступа
+      - "5433:5432"  # local access
 
-   
-
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: ["redis-server", "--save", "60", "1", "--appendonly", "yes"]
 
 volumes:
   postgres_data:
-   
+  redis_data:

@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field, EmailStr, ConfigDict, field_validator
 
 
 class UserCreate(BaseModel):
-    username : str = Field(..., min_length = 3, max_length = 20, description = "Имя пользователя от 3 до 20 символов")  
+    name : str = Field(..., min_length = 3, max_length = 20, description = "Имя пользователя от 3 до 20 символов")  
     email : EmailStr
     password : str = Field(..., min_length = 8, description = "Пароль не менее 8 символов")
 
@@ -27,3 +27,8 @@ class UserSchema(BaseModel):
 
 class RefreshToken(BaseModel):
     refresh_token : str
+
+
+
+class RefreshTokenlist(BaseModel):
+    refresh_tokens : list[RefreshToken] = Field(..., description="Список рефреш токенов")

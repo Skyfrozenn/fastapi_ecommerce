@@ -1,10 +1,13 @@
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, Depends
 
 from sqlalchemy import select, func
 from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import ReviewModel, ProductModel, CartModel, OrderModel, OrderItemModel
+from redis_client import get_redis
+
+import redis.asyncio as redis
 
  
 
@@ -53,3 +56,27 @@ async def _get_order_item(db : AsyncSession, order_id : int):
     )
     result = request_order.first()
     return result
+
+
+
+async def get_blecklisted_tokens(r : redis.Redis = Depends(get_redis)) -> list[str]:
+    cursor = 0
+    idx = 0
+    all_keys: list[str] = []
+
+    while True:
+        cursor, batch = await r.scan(
+            cursor=cursor,
+            match="blacklist:*",
+            count=100,
+        )
+
+        for key in batch:
+            idx += 1
+            all_keys.append(f"{idx}: {key}")  # "1 ключ", "2 ключ", ...
+
+        if cursor == 0:
+            break
+
+    return all_keys
+  

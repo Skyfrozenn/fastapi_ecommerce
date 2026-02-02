@@ -1,4 +1,5 @@
 import jwt
+import redis.asyncio as redis
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -11,6 +12,10 @@ from app.schemas.users import RefreshToken
 
 from datetime import datetime, timedelta,timezone
  
+from redis_client import get_redis
+
+
+ 
 oath2_scheme = OAuth2PasswordBearer(tokenUrl="users/token")
   
 class JWTManager:
@@ -19,7 +24,9 @@ class JWTManager:
         self.__secret_key = secret_key
         self.acces_token_expire_minutes = acces_token_expire_minutes
         self.refresh_token_expire_days = refresh_token_expire_days
-     
+    
+
+
     def create_acess_token(self, data : dict):
         to_encody = data.copy() #копируем словарь с данными чтобы не испортить оригинал
         exprire = datetime.now(timezone.utc) + timedelta(minutes=self.acces_token_expire_minutes) #текущее время + 30 минут
@@ -31,6 +38,10 @@ class JWTManager:
         )
         return jwt.encode(to_encody, self.__secret_key, algorithm = self.algorithm)
     
+
+
+
+
     def create_refresh_token(self, data : dict):
         to_encody = data.copy()
         expire = datetime.now(timezone.utc) + timedelta(days = self.refresh_token_expire_days)
@@ -43,6 +54,9 @@ class JWTManager:
         refresh_token = jwt.encode(to_encody, self.__secret_key, algorithm = self.algorithm)
         return refresh_token
     
+
+
+
     async def get_current_user(self, token : str = Depends(oath2_scheme), db : AsyncSession = Depends(get_async_db)):
         """
         Функция охранник проверяет акссес токен
@@ -75,12 +89,23 @@ class JWTManager:
             raise credentals_exception
         return user
     
-    async def verify_refresh_token(self, token : RefreshToken, db : AsyncSession = Depends(get_async_db)):  
+
+
+
+
+    async def verify_refresh_token(self, token : RefreshToken, db : AsyncSession = Depends(get_async_db), r : redis.Redis = Depends(get_redis)):  
         credentals_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Не удалось подтвердить учетные данные!",
             headers={"WWW-Authenticate": "Bearer"}
         )
+
+        if await r.get(f"blacklist:{token.refresh_token}") is not None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Токен был отозван!",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
         try:
             payload = jwt.decode(token.refresh_token, self.__secret_key, algorithms=[self.algorithm])
             email : str | None = payload.get("sub")
@@ -104,6 +129,10 @@ class JWTManager:
             raise credentals_exception
         return user
     
+
+
+
+
     async def new_access_token(self, user : UserModel ):
         data = {
         "sub" : user.email,
@@ -112,6 +141,11 @@ class JWTManager:
         }
         return self.create_acess_token(data)
     
+
+
+
+
+
     async def new_refresh_token(self, user : UserModel):
         data = {
         "sub" : user.email,
@@ -119,6 +153,15 @@ class JWTManager:
         "id" : user.id
         }
         return self.create_refresh_token(data)
+    
+
+
+
+    
+    async def revoke_refresh_tokens(self, tokens : list[RefreshToken], r : redis.Redis = Depends(get_redis)):
+        for token in tokens:
+            await r.set(f"blacklist:{token.refresh_token}", "revoked", ex = self.refresh_token_expire_days * 24 * 60 * 60)
+        return {"detail" : "Токены отозваны!"}
 
  
     
